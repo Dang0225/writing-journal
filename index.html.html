@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日寫作系統</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #eeede9;
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-tertiary: #9ca3a0;
+    --border: rgba(0,0,0,0.12);
+    --border-hover: rgba(0,0,0,0.22);
+    --border-strong: rgba(0,0,0,0.35);
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --info-bg: #e6f1fb;
+    --info-text: #185fa5;
+    --success-bg: #eaf3de;
+    --success-text: #3b6d11;
+    --warning-bg: #faeeda;
+    --warning-text: #854f0b;
+    --purple-bg: #eeedfe;
+    --purple-text: #3c3489;
+    --accent: #4338ca;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text-primary: #e8e4dc;
+      --text-secondary: #9ca3a0;
+      --text-tertiary: #6b6b67;
+      --border: rgba(255,255,255,0.1);
+      --border-hover: rgba(255,255,255,0.2);
+      --border-strong: rgba(255,255,255,0.3);
+      --info-bg: #0c447c33;
+      --info-text: #85b7eb;
+      --success-bg: #27500a33;
+      --success-text: #97c459;
+      --warning-bg: #63380633;
+      --warning-text: #ef9f27;
+      --purple-bg: #3c348933;
+      --purple-text: #afa9ec;
+      --accent: #6366f1;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+    line-height: 1.6;
+  }
+
+  .container {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 2rem;
+  }
+
+  .logo {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+
+  .logo span { color: var(--accent); }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 6px;
+  }
+
+  .tab {
+    flex: 1;
+    min-width: 80px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 8px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .tab.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  .tab:hover:not(.active) { background: var(--bg-secondary); }
+
+  .section { display: none; }
+  .section.visible { display: block; animation: fadeIn 0.2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    margin-bottom: 12px;
+  }
+
+  .card-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .card-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+  }
+
+  .card-body {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-right: 6px;
+    margin-top: 10px;
+  }
+
+  hr.divider {
+    border: none;
+    border-top: 0.5px solid var(--border);
+    margin: 1rem 0;
+  }
+
+  /* Day grid */
+  .day-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 1rem;
+  }
+
+  .day-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 10px 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .day-card:hover:not(.rest) { border-color: var(--border-hover); background: var(--bg-secondary); }
+  .day-card.selected { border-color: var(--border-strong); background: var(--bg-secondary); }
+  .day-card.rest { opacity: 0.45; cursor: default; }
+  .day-label { font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; }
+  .day-icon { font-size: 18px; }
+  .day-name { font-size: 11px; font-weight: 500; color: var(--text-primary); margin-top: 4px; }
+
+  /* Week grid */
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 1.25rem;
+  }
+
+  .week-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .week-card:hover { background: var(--bg-secondary); border-color: var(--border-hover); }
+  .week-card.selected { border-color: var(--border-strong); background: var(--bg-secondary); }
+  .week-num { font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; }
+  .week-skill { font-size: 14px; font-weight: 500; color: var(--text-primary); }
+
+  /* Prompts */
+  .prompt-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .prompt-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    transition: all 0.15s;
+  }
+
+  .prompt-row:hover { border-color: var(--border-hover); background: var(--bg-secondary); }
+  .prompt-type { font-size: 11px; padding: 2px 9px; border-radius: 10px; white-space: nowrap; margin-top: 1px; flex-shrink: 0; }
+  .prompt-text { font-size: 14px; color: var(--text-primary); line-height: 1.55; }
+
+  /* Method */
+  .method-row {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 1.1rem;
+    align-items: flex-start;
+  }
+
+  .method-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .method-content { flex: 1; }
+  .method-title { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-bottom: 3px; }
+  .method-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+
+  .example-box {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-top: 10px;
+  }
+
+  .example-box strong { color: var(--text-primary); font-weight: 500; }
+
+  /* Journal section */
+  .journal-area { display: flex; flex-direction: column; gap: 10px; }
+
+  textarea {
+    width: 100%;
+    min-height: 180px;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 14px;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--text-primary);
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.15s;
+    line-height: 1.8;
+  }
+
+  textarea:focus { border-color: var(--border-strong); }
+  textarea::placeholder { color: var(--text-tertiary); }
+
+  .journal-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .save-btn {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 9px 20px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .save-btn:hover { opacity: 0.88; }
+
+  .clear-btn {
+    background: transparent;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 9px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+
+  .clear-btn:hover { background: var(--bg-secondary); border-color: var(--border-hover); }
+
+  .char-count { font-size: 12px; color: var(--text-tertiary); margin-left: auto; }
+
+  .entries-list { display: flex; flex-direction: column; gap: 8px; margin-top: 1.25rem; }
+
+  .entry-item {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .entry-item:hover { border-color: var(--border-hover); }
+  .entry-date { font-size: 11px; color: var(--text-tertiary); margin-bottom: 4px; }
+  .entry-preview { font-size: 13px; color: var(--text-secondary); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-tertiary); font-size: 14px; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: var(--text-primary);
+    color: var(--bg);
+    border-radius: 20px;
+    padding: 10px 22px;
+    font-size: 13px;
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (max-width: 540px) {
+    body { padding: 1rem 0.75rem 3rem; }
+    .day-grid { gap: 4px; }
+    .day-card { padding: 8px 4px; }
+    .day-icon { font-size: 14px; }
+    .day-name { font-size: 10px; }
+    .week-grid { grid-template-columns: repeat(2, 1fr); }
+    .tabs { padding: 4px; }
+    .tab { font-size: 12px; padding: 7px 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo"><span>✦</span> 每日寫作系統</div>
+    <div class="subtitle">針對文字表達能力的刻意練習框架</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('daily', this)">每日結構</button>
+    <button class="tab" onclick="showTab('weekly', this)">週期技巧</button>
+    <button class="tab" onclick="showTab('prompts', this)">寫作提示</button>
+    <button class="tab" onclick="showTab('method', this)">精煉方法</button>
+    <button class="tab" onclick="showTab('journal', this)">今日日誌</button>
+  </div>
+
+  <!-- 每日結構 -->
+  <div class="section visible" id="daily">
+    <div class="day-grid">
+      <div class="day-card selected" onclick="selectDay(this,'mon')">
+        <div class="day-label">一</div>
+        <div class="day-icon">👁</div>
+        <div class="day-name">觀察日</div>
+      </div>
+      <div class="day-card" onclick="selectDay(this,'tue')">
+        <div class="day-label">二</div>
+        <div class="day-icon">✏️</div>
+        <div class="day-name">練習日</div>
+      </div>
+      <div class="day-card" onclick="selectDay(this,'wed')">
+        <div class="day-label">三</div>
+        <div class="day-icon">✂️</div>
+        <div class="day-name">刪減日</div>
+      </div>
+      <div class="day-card" onclick="selectDay(this,'thu')">
+        <div class="day-label">四</div>
+        <div class="day-icon">📖</div>
+        <div class="day-name">閱讀日</div>
+      </div>
+      <div class="day-card" onclick="selectDay(this,'fri')">
+        <div class="day-label">五</div>
+        <div class="day-icon">🔁</div>
+        <div class="day-name">改寫日</div>
+      </div>
+      <div class="day-card" onclick="selectDay(this,'sat')">
+        <div class="day-label">六</div>
+        <div class="day-icon">✨</div>
+        <div class="day-name">自由日</div>
+      </div>
+      <div class="day-card rest">
+        <div class="day-label">日</div>
+        <div class="day-icon">🌿</div>
+        <div class="day-name">留白日</div>
+      </div>
+    </div>
+
+    <div id="detail-mon" class="card">
+      <div class="card-label">週一 · 觀察日</div>
+      <div class="card-title">練習把感受翻譯成畫面</div>
+      <div class="card-body">今天發生了什麼？選一個場景，只用感官描述它——不用「很開心」，改成「嘴角不自覺上揚了三秒」。目標：把情緒的標籤，換成身體的細節。</div>
+      <span class="badge" style="background:var(--info-bg);color:var(--info-text);">具體化練習</span>
+      <span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);">15 分鐘</span>
+    </div>
+    <div id="detail-tue" class="card" style="display:none">
+      <div class="card-label">週二 · 練習日</div>
+      <div class="card-title">針對當週技巧做刻意練習</div>
+      <div class="card-body">取昨天的素材，套用本週的技巧焦點重新改寫一遍。不追求完美，追求「比昨天好一個地方」。改寫完後寫一句話：我改動了什麼，為什麼這樣更好。</div>
+      <span class="badge" style="background:var(--success-bg);color:var(--success-text);">刻意練習</span>
+      <span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);">20 分鐘</span>
+    </div>
+    <div id="detail-wed" class="card" style="display:none">
+      <div class="card-label">週三 · 刪減日</div>
+      <div class="card-title">把一段話削掉三分之一</div>
+      <div class="card-body">取本週任何一段你寫過的文字，把字數削減 30%，但意思不能消失。刪完後問自己：我刪掉的東西，讀者其實根本不需要嗎？這個練習會讓你看見自己的語言習慣。</div>
+      <span class="badge" style="background:var(--warning-bg);color:var(--warning-text);">精煉刪減</span>
+      <span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);">15 分鐘</span>
+    </div>
+    <div id="detail-thu" class="card" style="display:none">
+      <div class="card-label">週四 · 閱讀日</div>
+      <div class="card-title">讀一位你欣賞的作者，分析一段落</div>
+      <div class="card-body">選本週的五猩猩作者，精讀一段。不只讀意思，要讀結構：第一句做了什麼？怎麼轉折？最後一句留下什麼？把發現記下來，這些就是你的私人寫作筆記。</div>
+      <span class="badge" style="background:var(--info-bg);color:var(--info-text);">五猩猩輸入</span>
+      <span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);">20 分鐘</span>
+    </div>
+    <div id="detail-fri" class="card" style="display:none">
+      <div class="card-label">週五 · 改寫日</div>
+      <div class="card-title">用昨天讀到的手法改寫舊文</div>
+      <div class="card-body">把週四學到的一個手法，套用在自己的一段舊文上。這是五猩猩法則的實踐環節——輸入之後必須有輸出，才能真正內化。不求整篇改，改好一句話就夠。</div>
+      <span class="badge" style="background:var(--success-bg);color:var(--success-text);">輸入轉輸出</span>
+      <span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);">20 分鐘</span>
+    </div>
+    <div id="detail-sat" class="card" style="display:none">
+      <div class="card-label">週六 · 自由日</div>
+      <div class="card-title">不設限，跟著感覺走</div>
+      <div class="card-body">這天沒有技巧要求。寫任何你想寫的——靈感、夢、憤怒、喜悅。目的是讓寫作不只是訓練，也是表達。這是維持熱情的防護網，別把它也變成作業。</div>
+      <span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);">自由書寫</span>
+      <span class="badge" style="background:var(--bg-secondary);color:var(--text-secondary);">不限時</span>
+    </div>
+  </div>
+
+  <!-- 週期技巧 -->
+  <div class="section" id="weekly">
+    <div class="week-grid">
+      <div class="week-card selected" onclick="selectWeek(this,'w1')">
+        <div class="week-num">第一週</div>
+        <div class="week-skill">具體化</div>
+      </div>
+      <div class="week-card" onclick="selectWeek(this,'w2')">
+        <div class="week-num">第二週</div>
+        <div class="week-skill">精煉刪減</div>
+      </div>
+      <div class="week-card" onclick="selectWeek(this,'w3')">
+        <div class="week-num">第三週</div>
+        <div class="week-skill">開頭結尾</div>
+      </div>
+      <div class="week-card" onclick="selectWeek(this,'w4')">
+        <div class="week-num">第四週</div>
+        <div class="week-skill">自由覆盤</div>
+      </div>
+    </div>
+
+    <div id="wdetail-w1" class="card">
+      <div class="card-label">第一週核心技巧</div>
+      <div class="card-title">具體化——把抽象翻譯成畫面</div>
+      <div class="card-body">每次看到自己寫出「很失落」「很充實」「很複雜」這類標籤詞，就停下來問：這個感受在我身體的哪裡？如果要拍成一個畫面，鏡頭會對準什麼？</div>
+      <hr class="divider">
+      <div class="example-box">
+        <strong>練習句：</strong><br>
+        改寫前：「那天我很緊張。」<br>
+        改寫後：「我一直在用拇指摳食指的指甲縫，直到出血。」
+      </div>
+    </div>
+    <div id="wdetail-w2" class="card" style="display:none">
+      <div class="card-label">第二週核心技巧</div>
+      <div class="card-title">精煉刪減——讓每個字都有必要</div>
+      <div class="card-body">好的文字是密度高的文字。冗長不是因為想說的多，而是因為還沒想清楚。本週每天從自己的文字裡找一段，練習把它削減 30%，同時讓意思更清晰而非更模糊。</div>
+      <hr class="divider">
+      <div class="example-box">
+        <strong>刪減順序：</strong><br>
+        先刪形容詞 → 再刪副詞 → 刪「我覺得」「我認為」等開頭語 → 最後看有沒有整句可以去掉
+      </div>
+    </div>
+    <div id="wdetail-w3" class="card" style="display:none">
+      <div class="card-label">第三週核心技巧</div>
+      <div class="card-title">開頭與結尾——製造張力與餘韻</div>
+      <div class="card-body">讀者決定要不要繼續讀，在第一句。讀者決定要不要記住你，在最後一句。本週練習：開頭不用背景鋪陳，直接切入最有力的時刻；結尾不用總結，留一個問題或畫面給讀者消化。</div>
+      <hr class="divider">
+      <div class="example-box">
+        <strong>原則：</strong><br>
+        開頭——讓讀者在第一句就想問「然後呢？」<br>
+        結尾——不要說「所以我學到了……」，用一個畫面或反問收尾
+      </div>
+    </div>
+    <div id="wdetail-w4" class="card" style="display:none">
+      <div class="card-label">第四週 · 自由覆盤週</div>
+      <div class="card-title">回顧三週，找出你的語言盲點</div>
+      <div class="card-body">這週不學新技巧。回頭讀前三週的所有日誌，找出兩件事：一、你反覆出現的壞習慣是什麼？二、哪一句話你覺得最好，為什麼好？把這兩個答案寫下來。</div>
+      <hr class="divider">
+      <div class="example-box">
+        <strong>覆盤問題：</strong><br>
+        我最常逃進哪個模糊詞？<br>
+        我的最佳句子和最差句子，差在哪裡？<br>
+        下個月我最想繼續練的技巧是什麼？
+      </div>
+    </div>
+  </div>
+
+  <!-- 寫作提示 -->
+  <div class="section" id="prompts">
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="card-label">提示分三類</div>
+      <div class="card-body">沒靈感時選一個作為起點，有靈感時用來聚焦方向。</div>
+    </div>
+    <div class="prompt-list">
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--info-bg);color:var(--info-text);">感官</span>
+        <span class="prompt-text">描述今天你看見的一個具體細節，不能用任何情緒詞彙</span>
+      </div>
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--info-bg);color:var(--info-text);">感官</span>
+        <span class="prompt-text">今天什麼聲音讓你停下來了？</span>
+      </div>
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--warning-bg);color:var(--warning-text);">對比</span>
+        <span class="prompt-text">今天有什麼事，讓你的感受和你預期的不一樣？</span>
+      </div>
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--warning-bg);color:var(--warning-text);">對比</span>
+        <span class="prompt-text">今天你說了什麼話，事後覺得「其實我想說的不是這個」？</span>
+      </div>
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--success-bg);color:var(--success-text);">追問</span>
+        <span class="prompt-text">今天你為什麼做了那個決定？再追問一層：那個原因背後的原因是什麼？</span>
+      </div>
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--success-bg);color:var(--success-text);">追問</span>
+        <span class="prompt-text">如果今天的心情是一個天氣，要怎麼描述它，但不能說出天氣的名稱？</span>
+      </div>
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--purple-bg);color:var(--purple-text);">覆盤</span>
+        <span class="prompt-text">本週我寫過的最好一句話是什麼？為什麼它好？</span>
+      </div>
+      <div class="prompt-row">
+        <span class="prompt-type" style="background:var(--purple-bg);color:var(--purple-text);">覆盤</span>
+        <span class="prompt-text">我這週最常用的「逃跑詞」是什麼？下週要怎麼替換它？</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 精煉方法 -->
+  <div class="section" id="method">
+    <div class="card">
+      <div class="card-label">留白日 · 每週日</div>
+      <div class="card-title">三個覆盤動作，建立文字品味</div>
+      <div class="card-body">這天不寫新東西。回讀本週日誌，完成下面三件事。</div>
+    </div>
+    <div style="margin: 1.25rem 0;">
+      <div class="method-row">
+        <div class="method-num">1</div>
+        <div class="method-content">
+          <div class="method-title">找出本週最好的一句話</div>
+          <div class="method-desc">不要看整篇，只找一句。問自己：它為什麼好？是因為具體、有節奏、還是意外？這個分析比寫一百句更有價值。</div>
+        </div>
+      </div>
+      <div class="method-row">
+        <div class="method-num">2</div>
+        <div class="method-content">
+          <div class="method-title">找出你這週最常用的逃跑詞</div>
+          <div class="method-desc">逃跑詞是你用來迴避思考的模糊詞彙，例如「很複雜」「不知道為什麼」「有點」。找到它，下週就能主動抓住自己。</div>
+        </div>
+      </div>
+      <div class="method-row">
+        <div class="method-num">3</div>
+        <div class="method-content">
+          <div class="method-title">寫一句話的寫作發現</div>
+          <div class="method-desc">格式：「我發現我___，下週我要___。」這句話會日積月累成你自己的寫作手冊，比任何寫作書都更適合你。</div>
+        </div>
+      </div>
+    </div>
+    <hr class="divider">
+    <div class="card">
+      <div class="card-label">長期追蹤</div>
+      <div class="card-title">每月選出最佳一段，觀察進步軌跡</div>
+      <div class="card-body">每個月底選出本月最滿意的一段話，存成「月度精選」。三個月後回讀第一個月的精選，你會看見自己成長了多少——這個對比是最強的持續動力。</div>
+    </div>
+  </div>
+
+  <!-- 今日日誌 -->
+  <div class="section" id="journal">
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="card-label" id="today-date"></div>
+      <div class="card-title">今天的練習</div>
+      <div class="card-body" id="today-prompt">選一個你今天觀察到的細節，把它寫下來。</div>
+    </div>
+    <div class="journal-area">
+      <textarea id="journal-input" placeholder="開始書寫…"></textarea>
+      <div class="journal-controls">
+        <button class="save-btn" onclick="saveEntry()">儲存這篇</button>
+        <button class="clear-btn" onclick="clearInput()">清除</button>
+        <span class="char-count" id="char-count">0 字</span>
+      </div>
+    </div>
+
+    <div class="entries-list" id="entries-list">
+      <div class="card" style="margin-top:1rem;">
+        <div class="card-label">過去的記錄</div>
+        <div id="entries-container"><div class="empty-state">還沒有任何記錄，寫下第一篇吧。</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // Tab switching
+  function showTab(id, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('visible'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('visible');
+    btn.classList.add('active');
+  }
+
+  // Day cards
+  const dayKeys = ['mon','tue','wed','thu','fri','sat'];
+  function selectDay(el, key) {
+    document.querySelectorAll('.day-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    dayKeys.forEach(k => {
+      const d = document.getElementById('detail-' + k);
+      if (d) d.style.display = k === key ? 'block' : 'none';
+    });
+  }
+
+  // Week cards
+  const weekKeys = ['w1','w2','w3','w4'];
+  function selectWeek(el, key) {
+    document.querySelectorAll('.week-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    weekKeys.forEach(k => {
+      const d = document.getElementById('wdetail-' + k);
+      if (d) d.style.display = k === key ? 'block' : 'none';
+    });
+  }
+
+  // Journal
+  const input = document.getElementById('journal-input');
+  const charCount = document.getElementById('char-count');
+
+  input.addEventListener('input', () => {
+    charCount.textContent = input.value.length + ' 字';
+  });
+
+  function clearInput() {
+    input.value = '';
+    charCount.textContent = '0 字';
+  }
+
+  function saveEntry() {
+    const text = input.value.trim();
+    if (!text) return;
+    const entries = getEntries();
+    entries.unshift({ id: Date.now(), date: new Date().toISOString(), text });
+    localStorage.setItem('writing-entries', JSON.stringify(entries));
+    clearInput();
+    renderEntries();
+    showToast('已儲存 ✓');
+  }
+
+  function getEntries() {
+    try { return JSON.parse(localStorage.getItem('writing-entries') || '[]'); } catch { return []; }
+  }
+
+  function renderEntries() {
+    const container = document.getElementById('entries-container');
+    const entries = getEntries();
+    if (!entries.length) {
+      container.innerHTML = '<div class="empty-state">還沒有任何記錄，寫下第一篇吧。</div>';
+      return;
+    }
+    container.innerHTML = entries.map(e => {
+      const d = new Date(e.date);
+      const dateStr = d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
+      const preview = e.text.length > 80 ? e.text.slice(0, 80) + '…' : e.text;
+      return `<div class="entry-item" onclick="viewEntry(${e.id})">
+        <div class="entry-date">${dateStr}</div>
+        <div class="entry-preview">${preview}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function viewEntry(id) {
+    const entries = getEntries();
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return;
+    const d = new Date(entry.date);
+    const dateStr = d.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    const win = window.open('', '_blank', 'width=600,height=500');
+    win.document.write(`<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8"><title>日誌記錄</title>
+      <style>body{font-family:-apple-system,sans-serif;max-width:520px;margin:3rem auto;padding:0 1.5rem;color:#1a1a18;line-height:1.8;}
+      h2{font-size:14px;color:#9ca3a0;font-weight:400;margin-bottom:1.5rem;}
+      p{font-size:16px;white-space:pre-wrap;}</style></head>
+      <body><h2>${dateStr}</h2><p>${entry.text}</p></body></html>`);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // Init today
+  function initToday() {
+    const days = ['日','一','二','三','四','五','六'];
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' }) + '（週' + days[now.getDay()] + '）';
+    document.getElementById('today-date').textContent = dateStr;
+
+    const prompts = [
+      '描述今天你看見的一個具體細節，不能用任何情緒詞彙',
+      '今天有什麼事，讓你的感受和你預期的不一樣？',
+      '今天你為什麼做了那個決定？再追問一層：那個原因背後的原因是什麼？',
+      '如果今天的心情是一個天氣，要怎麼描述它，但不能說出天氣的名稱？',
+      '今天什麼聲音讓你停下來了？',
+      '今天你說了什麼話，事後覺得「其實我想說的不是這個」？',
+    ];
+    document.getElementById('today-prompt').textContent = prompts[now.getDay() % prompts.length];
+
+    // Auto-select today's day card
+    const dayMap = [null,'mon','tue','wed','thu','fri','sat'];
+    const dayKey = dayMap[now.getDay()];
+    if (dayKey) {
+      const el = document.querySelector(`.day-card:not(.rest)`);
+      document.querySelectorAll('.day-card').forEach((card, i) => {
+        if (i === now.getDay() - 1 && now.getDay() !== 0) {
+          card.classList.add('selected');
+          ['mon','tue','wed','thu','fri','sat'].forEach(k => {
+            const d = document.getElementById('detail-' + k);
+            if (d) d.style.display = k === dayKey ? 'block' : 'none';
+          });
+        }
+      });
+    }
+  }
+
+  initToday();
+  renderEntries();
+</script>
+</body>
+</html>
